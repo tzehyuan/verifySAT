@@ -1,0 +1,121 @@
+
+class symmetries:
+    def symmetry_break_1(f):
+        '''
+        case 1 : (¬x ∨ ¬y) and let there be clauses (x ∨ α), (x ∨ β), (y ∨ γ),(y ∨ δ)
+        case 2 : (¬x ∨ ¬y ∨ ¬z) and let there be clauses (x ∨ α), (x ∨ β), (y ∨ γ),(y ∨ δ), (z ∨ ω) and (z ∨ σ)
+
+        Whenever applicable, ensure that |α| >= |β|, |γ|>= |δ|, and |ω|>=|σ| and  |α| + |β|>= |γ| + |δ| >= |ω|+|σ|
+        '''
+        if (len(f[1])< len(f[2])):
+            return f"length of clause 1:{display_clause(f[1])} <length of clause 2:{display_clause(f[2])} "
+        if (len(f[3])< len(f[4])):
+            return f"length of clause 3:{display_clause(f[3])} <length of clause 4:{display_clause(f[4])} "
+        if len(f[0])==3 and (len(f[5])< len(f[6])):
+            return f"length of clause 5:{display_clause(f[5])} <length of clause 6:{display_clause(f[6])} "
+        if len(f[1])+ len(f[2]) < len(f[3])+ len(f[4]):
+            return f"length of clause 1,2:{display_clause(f[1])},{display_clause(f[2])} <length of clause 3,4:{display_clause(f[3])},{display_clause(f[4])}"
+        if len(f[0])==3 and len(f[3])+ len(f[4]) < len(f[5])+ len(f[6]):
+            return f"length of clause 3,4:{display_clause(f[3])},{display_clause(f[4])} <length of clause 5,6:{display_clause(f[5])},{display_clause(f[6])}"
+        return ""
+    
+    
+    
+    def symmetry_break_2(f):
+        '''
+        for v ∈ [11 ... 18] (if all-negative clause is length 2) or [11 ... 19] (if all-negative clause is length 3),
+        w(v) is the minimum index of a clause the variable appear in or 10 otherwise. 
+        w.l.o.g, we can only consider formulas s.t. [w(v) | u ∈ [11 ... 19]] is non-decreasing
+        '''
+        if len(f[0])==2: #all-negative clause of length 2
+            variables = [i for i in range(11,19)]
+        if len(f[0])==3: #all-negative clause of length 3
+            variables = [i for i in range(11,20)]
+      
+        def w(v):
+            for index, c in enumerate(f):
+                if v in c or -1*v in c:
+                    return index
+            return 10
+        
+        Wvariables =[w(v) for v in variables]
+
+        for i in range(len(variables)):
+            if i == len(variables)-1: #passes the symmetric break
+                return ""
+            if Wvariables[i] > Wvariables[i+1]:
+                return f"variable {display_literal(variables[i])} is in clause {Wvariables[i]} but variable {display_literal(variables[i+1])} is in clause {Wvariables[i+1]}"
+               
+class reduction_constraints:            
+    def singleton_clause(f):
+        '''check if there are singleton clause'''
+        for index,c in enumerate(f):
+            if len(c)==1:
+                return f"clause {index} is a singleton"
+        return ""
+    
+    def rule5(f): 
+        '''rule 5: check if there are 2 variables that occur together in 2 clause in F'''
+        var_f = [vars(c) for c in f]
+        for i in range(len(f)):
+            for j in range(i+1,len(f)):
+                s = var_f[i] & var_f[j]
+                if len(s)>=2:
+                    return f"clause {i}:{display_clause(f[i])} and clause {j}:{display_clause(f[j])} contains at least 2 variable in common"
+        return ""
+    
+    def rule61(f):
+        '''with clause [¬x,¬y,A], [x,v1, B], [y,¬v1,C], with possibly A,B,C a variable can be eliminated'''
+        variables = [i for i in range(11,20)]
+        
+        for v in variables:
+            n , p = 0, 0 #index of negative instance and positve instance
+            for index,c in enumerate(f):
+                if v in c:
+                    p = index
+                if -1*v in c:
+                    n = index
+                if n > 0 and p > 0:
+                    return f"rule 6.1 violated due to variable {display_literal(v)} for clauses {n}:{display_clause(f[n])} and clause {p}:{display_clause(f[p])}"
+        return ""
+
+    def rule62(f):
+        '''with clause [¬x,¬y,A], [x,v1], [y,v1], with possibly A,B a variable can be eliminated'''
+        variables = [i for i in range(11,20)]
+        
+        for v in variables:        
+            c1 , c2 = 0, 0 #index of first instance of v1 in a 2-clause and the other instance of v1 in a 2 clause
+            for index,c in enumerate(f):
+                if c1 ==0 and len(c) ==2 and v in c:
+                    c1 = index
+                elif len(c) ==2 and v in c:
+                    c2 = index
+                if c1 > 0 and c2 > 0:
+                    return f"rule 6.2 violated due to variable {display_literal(v)} for clauses {c1}:{display_clause(f[c1])} and clause {c2}:{display_clause(f[c2])}"
+        return ""        
+        
+    def rule63(f):
+        '''with clause [¬x,¬y], [x,v1], [y,v1], with possibly A,B a variable can be eliminated'''
+        assert(len(f[0])==2)
+        variables = [i for i in range(11,20)]
+        
+        for v in variables:        
+            c1 , c2 = 0, 0 #index of first instance of v1 in a 2-clause and the other instance of v1 
+            for index,c in enumerate(f):
+                if c1 ==0 and len(c) ==2 and v in c:
+                    c1 = index
+                elif v in c:
+                    c2 = index
+                if c1 > 0 and c2 > 0:
+                    return f"rule 6.3 violated due to variable {display_literal(v)} for clauses {c1}:{display_clause(f[c1])} and clause {c2}:{display_clause(f[c2])}"
+        return ""   
+    
+    def contain_negative_literal(f):
+        '''with clause [¬x,¬y], do the literal x or y share a clause with an all negative literal'''
+        assert(len(f[0])==2)
+        variables = [i for i in range(11,20)]
+        for v in variables:
+            for c in f:
+                if -1 * v in c:
+                    return ""
+        return "the literals x and y are not neighbours with a negative literal"
